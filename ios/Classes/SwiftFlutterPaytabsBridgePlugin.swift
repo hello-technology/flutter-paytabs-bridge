@@ -277,7 +277,7 @@ if let topViewController = getTopViewController() {
              configuration.paymentNetworks = generatePaymentNetworks(paymentsArray: paymentNetworks)
          }
 
-        configuration.metaData = ["PaymentSDKPluginName": "flutter", "PaymentSDKPluginVersion": "2.7.1"]
+        configuration.metaData = ["PaymentSDKPluginName": "flutter", "PaymentSDKPluginVersion": "2.7.2"]
         return configuration
     }
 
