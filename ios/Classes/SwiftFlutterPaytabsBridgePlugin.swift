@@ -90,9 +90,8 @@ public class SwiftFlutterPaymentSDKBridgePlugin: NSObject, FlutterPlugin {
 
     private func startPaymentWithSavedCards(arguments: [String : Any]) {
         let configuration = generateConfiguration(dictionary: arguments)
-        let support3DS = arguments["support3DS"] as? Bool ?? false
         if let topViewController = getTopViewController() {
-            PaymentManager.startPaymentWithSavedCards(on: topViewController, configuration:configuration, support3DS: support3DS, delegate: self)
+            PaymentManager.startCardPayment(on: topViewController, configuration: configuration, delegate: self)
         }
     }
 
