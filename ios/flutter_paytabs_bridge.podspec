@@ -13,7 +13,7 @@ A new flutter plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'flutter_paytabs_bridge/Sources/flutter_paytabs_bridge/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '15.0'
   s.dependency "PayTabsSDK", "6.6.55"
