@@ -1,3 +1,9 @@
+## 2.7.16
+
+* Add Swift Package Manager support
+* Present payment screens from the top view controller on iOS
+* Reuse a single event subscription across payment calls
+
 ## 2.7.15
 
 * Update Android payment-sdk to 6.8.15 (fix keyboard covering input fields)
