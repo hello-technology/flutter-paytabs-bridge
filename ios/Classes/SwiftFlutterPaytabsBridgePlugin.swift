@@ -74,8 +74,8 @@ public class SwiftFlutterPaymentSDKBridgePlugin: NSObject, FlutterPlugin {
 
     private func startCarPayment(arguments: [String: Any]) {
         let configuration = generateConfiguration(dictionary: arguments)
-        if let rootViewController = getRootController() {
-            PaymentManager.startCardPayment(on: rootViewController, configuration: configuration, delegate: self)
+        if let topViewController = getTopViewController() {
+            PaymentManager.startCardPayment(on: topViewController, configuration: configuration, delegate: self)
         }
     }
 
@@ -86,8 +86,8 @@ public class SwiftFlutterPaymentSDKBridgePlugin: NSObject, FlutterPlugin {
         else {
             return
         }
-        if let rootViewController = getRootController() {
-            PaymentManager.startTokenizedCardPayment(on: rootViewController, configuration: configuration, token: token, transactionRef: transactionReference, delegate: self)
+        if let topViewController = getTopViewController() {
+            PaymentManager.startTokenizedCardPayment(on: topViewController, configuration: configuration, token: token, transactionRef: transactionReference, delegate: self)
         }
     }
 
@@ -103,8 +103,8 @@ public class SwiftFlutterPaymentSDKBridgePlugin: NSObject, FlutterPlugin {
 
         let savedCardInfo = PaymentSDKSavedCardInfo(maskedCard: maskedCard, cardType: token)
 
-        if let rootViewController = getRootController() {
-            PaymentManager.start3DSecureTokenizedCardPayment(on: rootViewController,
+        if let topViewController = getTopViewController() {
+            PaymentManager.start3DSecureTokenizedCardPayment(on: topViewController,
                                                              configuration: configuration,
                                                              savedCardInfo: savedCardInfo,
                                                              token: token,
@@ -170,22 +170,41 @@ public class SwiftFlutterPaymentSDKBridgePlugin: NSObject, FlutterPlugin {
 
     private func startAlternativePaymentMethod(arguments: [String: Any]) {
         let configuration = generateConfiguration(dictionary: arguments)
-        if let rootViewController = getRootController() {
-            PaymentManager.startAlternativePaymentMethod(on: rootViewController, configuration: configuration, delegate: self)
+        if let topViewController = getTopViewController() {
+            PaymentManager.startAlternativePaymentMethod(on: topViewController, configuration: configuration, delegate: self)
         }
+    }
+
+    func canUseApplePay() -> Bool {
+        return PKPaymentAuthorizationViewController.canMakePayments()
     }
 
     private func startApplePayPayment(arguments: [String: Any]) {
+        guard canUseApplePay() else {
+            print("Apple Pay is not available on this device.")
+            return
+        }
         let configuration = generateConfiguration(dictionary: arguments)
-        if let rootViewController = getRootController() {
-            PaymentManager.startApplePayPayment(on: rootViewController, configuration: configuration, delegate: self)
+        if let topViewController = getTopViewController() {
+            DispatchQueue.main.async {
+                PaymentManager.startApplePayPayment(on: topViewController, configuration: configuration, delegate: self)
+            }
+        } else {
+            print("Could not find a visible view controller to present Apple Pay.")
         }
     }
 
-    func getRootController() -> UIViewController? {
-        let keyWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? UIApplication.shared.windows.first
-        let topController = keyWindow?.rootViewController
-        return topController
+    func getTopViewController(_ rootViewController: UIViewController? = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController) -> UIViewController? {
+        if let presented = rootViewController?.presentedViewController {
+            return getTopViewController(presented)
+        }
+        if let nav = rootViewController as? UINavigationController {
+            return getTopViewController(nav.visibleViewController)
+        }
+        if let tab = rootViewController as? UITabBarController {
+            return getTopViewController(tab.selectedViewController)
+        }
+        return rootViewController
     }
 
     private func generateConfiguration(dictionary: [String: Any]) -> PaymentSDKConfiguration {
