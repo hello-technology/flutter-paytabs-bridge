@@ -124,36 +124,67 @@ const String pt_validation_url = "pt_validation_url";
 const String pt_bin_length = "pt_bin_length";
 const String pt_block_if_no_response = "pt_block_if_no_response";
 
+
+/// Bridge for interacting with Paytabs native SDK via Flutter platform channels.
 class FlutterPaytabsBridge {
-  static Future<dynamic> startCardPayment(
-      PaymentSdkConfigurationDetails arg, void eventsCallBack(dynamic)) async {
-    arg.samsungPayToken = null;
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
-    var logoImage = arg.iOSThemeConfigurations?.logoImage ?? "";
-    if (logoImage != "") {
-      arg.iOSThemeConfigurations?.logoImage = await handleImagePath(logoImage);
-    }
-    return await localChannel.invokeMethod('startCardPayment', arg.map);
+  static const MethodChannel _channel = MethodChannel('flutter_paytabs_bridge');
+  static const EventChannel _stream = EventChannel('flutter_paytabs_bridge_stream');
+
+  /// Shared event subscription to prevent duplicate listeners.
+  static StreamSubscription? _eventSubscription;
+
+  /// Disposes the event subscription.
+  /// Call this when the payment flow is no longer needed (e.g., on app/module exit).
+  static Future<void> dispose() async {
+    await _eventSubscription?.cancel();
+    _eventSubscription = null;
   }
 
+  /// Internal utility to listen to Paytabs events.
+  /// Cancels any previous subscription before starting a new one.
+  static void _listenToEvents(
+      void Function(dynamic) eventsCallback, {
+        void Function(Object)? onError,
+      }) {
+    _eventSubscription?.cancel();
+    _eventSubscription = _stream.receiveBroadcastStream().listen(
+      eventsCallback,
+      onError: onError ?? (error) {
+        print('Paytabs event error: $error');
+      },
+      cancelOnError: false,
+    );
+  }
+
+  /// Starts a standard card payment.
+  static Future<dynamic> startCardPayment(
+      PaymentSdkConfigurationDetails arg,
+      void Function(dynamic) eventsCallback,
+      ) async {
+    arg.samsungPayToken = null;
+    _listenToEvents(eventsCallback);
+
+    var logoImage = arg.iOSThemeConfigurations?.logoImage ?? "";
+    if (logoImage.isNotEmpty) {
+      arg.iOSThemeConfigurations?.logoImage = await handleImagePath(logoImage);
+    }
+
+    return await _channel.invokeMethod('startCardPayment', arg.map);
+  }
+
+  /// Starts a tokenized card payment.
   static Future<void> startTokenizedCardPayment(
       PaymentSdkConfigurationDetails arg,
       String token,
       String transactionRef,
-      void Function(dynamic) eventsCallBack) async {
+      void Function(dynamic) eventsCallback,
+      ) async {
     final completer = Completer<void>();
-
     arg.samsungPayToken = null;
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
 
-    StreamSubscription<dynamic>? subscription;
-    subscription = localStream.receiveBroadcastStream().listen((event) {
-      eventsCallBack(event);
+    StreamSubscription? subscription;
+    subscription = _stream.receiveBroadcastStream().listen((event) {
+      eventsCallback(event);
 
       if (event["status"] == "success" ||
           event["status"] == "error" ||
@@ -161,116 +192,130 @@ class FlutterPaytabsBridge {
         if (!completer.isCompleted) {
           completer.complete();
         }
-
         subscription?.cancel();
       }
+    }, onError: (error) {
+      print('Paytabs event error: $error');
+      if (!completer.isCompleted) {
+        completer.completeError(error);
+      }
+      subscription?.cancel();
     });
 
     var logoImage = arg.iOSThemeConfigurations?.logoImage ?? "";
-    if (logoImage != "") {
+    if (logoImage.isNotEmpty) {
       arg.iOSThemeConfigurations?.logoImage = await handleImagePath(logoImage);
     }
     var argsMap = arg.map;
     argsMap["token"] = token;
     argsMap["transactionRef"] = transactionRef;
 
-    localChannel.invokeMethod('startTokenizedCardPayment', argsMap);
+    await _channel.invokeMethod('startTokenizedCardPayment', argsMap);
 
     await completer.future;
-
     await subscription.cancel();
   }
 
+  /// Starts a 3D Secure tokenized card payment.
   static Future<dynamic> start3DSecureTokenizedCardPayment(
       PaymentSdkConfigurationDetails arg,
       PaymentSDKSavedCardInfo paymentSDKSavedCardInfo,
       String token,
-      void eventsCallBack(dynamic)) async {
+      void Function(dynamic) eventsCallback,
+      ) async {
     arg.samsungPayToken = null;
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
+    _listenToEvents(eventsCallback);
+
     var logoImage = arg.iOSThemeConfigurations?.logoImage ?? "";
-    if (logoImage != "") {
+    if (logoImage.isNotEmpty) {
       arg.iOSThemeConfigurations?.logoImage = await handleImagePath(logoImage);
     }
     var argsMap = arg.map;
     argsMap["token"] = token;
     argsMap["paymentSDKSavedCardInfo"] = paymentSDKSavedCardInfo.map;
-    return await localChannel.invokeMethod(
-        'start3DSecureTokenizedCardPayment', argsMap);
+    return await _channel.invokeMethod('start3DSecureTokenizedCardPayment', argsMap);
   }
 
+  /// Queries a transaction.
   static Future<dynamic> queryTransaction(
       PaymentSdkConfigurationDetails arg,
       PaymentSDKQueryConfiguration paymentSDKQueryConfiguration,
-      void eventsCallBack(dynamic)) async {
+      void Function(dynamic) eventsCallback,
+      ) async {
     arg.samsungPayToken = null;
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
+    _listenToEvents(eventsCallback);
+
     var logoImage = arg.iOSThemeConfigurations?.logoImage ?? "";
-    if (logoImage != "") {
+    if (logoImage.isNotEmpty) {
       arg.iOSThemeConfigurations?.logoImage = await handleImagePath(logoImage);
     }
     var argsMap = arg.map;
     argsMap["paymentSDKQueryConfiguration"] = paymentSDKQueryConfiguration.map;
-    return await localChannel.invokeMethod('queryTransaction', argsMap);
+    return await _channel.invokeMethod('queryTransaction', argsMap);
   }
 
-  static Future<dynamic> cancelPayment(void eventsCallBack(dynamic)) async {
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
-    return await localChannel.invokeMethod('cancelPayment');
+  /// Cancels an ongoing payment.
+  static Future<dynamic> cancelPayment(
+      void Function(dynamic) eventsCallback,
+      ) async {
+    _listenToEvents(eventsCallback);
+    return await _channel.invokeMethod('cancelPayment');
   }
 
+  /// Handles the image path for iOS theme configurations.
+  /// Loads the asset, saves it to the app's documents directory, and returns the new path.
   static Future<String> handleImagePath(String path) async {
-    var bytes = await rootBundle.load(path);
-    String dir = (await getApplicationDocumentsDirectory()).path;
-    var imageName = path.split("/").last;
-    String logoPath = '$dir/$imageName';
-    var _ = await writeToFile(bytes, logoPath);
-    return logoPath;
+    try {
+      String dir = (await getApplicationDocumentsDirectory()).path;
+      var imageName = path.split("/").last;
+      String logoPath = '$dir/$imageName';
+      if (!File(logoPath).existsSync()) {
+        var bytes = await rootBundle.load(path);
+        await writeToFile(bytes, logoPath);
+      }
+      return logoPath;
+    } catch (e) {
+      print('Error handling image path: $e');
+      return path; // fallback to original
+    }
   }
 
-  static Future<void> writeToFile(ByteData data, String path) {
+  /// Writes [data] to the file at [path].
+  static Future<void> writeToFile(ByteData data, String path) async {
     final buffer = data.buffer;
-    return new File(path).writeAsBytes(
-        buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    await File(path).writeAsBytes(
+      buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+    );
   }
 
+  /// Starts an alternative payment method (APM) payment.
   static Future<dynamic> startAlternativePaymentMethod(
-      PaymentSdkConfigurationDetails arg, void eventsCallBack(dynamic)) async {
+      PaymentSdkConfigurationDetails arg,
+      void Function(dynamic) eventsCallback,
+      ) async {
     arg.samsungPayToken = null;
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
-    return await localChannel.invokeMethod('startApmsPayment', arg.map);
+    _listenToEvents(eventsCallback);
+    return await _channel.invokeMethod('startApmsPayment', arg.map);
   }
 
+  /// Starts a Samsung Pay payment.
   static Future<dynamic> startSamsungPayPayment(
-      PaymentSdkConfigurationDetails arg, void eventsCallBack(dynamic)) async {
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
-    return await localChannel.invokeMethod('startSamsungPayPayment', arg.map);
+      PaymentSdkConfigurationDetails arg,
+      void Function(dynamic) eventsCallback,
+      ) async {
+    _listenToEvents(eventsCallback);
+    return await _channel.invokeMethod('startSamsungPayPayment', arg.map);
   }
 
+  /// Starts an Apple Pay payment (iOS only).
   static Future<dynamic> startApplePayPayment(
-      PaymentSdkConfigurationDetails arg, void eventsCallBack(dynamic)) async {
+      PaymentSdkConfigurationDetails arg,
+      void Function(dynamic) eventsCallback,
+      ) async {
     if (!Platform.isIOS) {
       return null;
     }
-    MethodChannel localChannel = MethodChannel('flutter_paytabs_bridge');
-    EventChannel localStream =
-        const EventChannel('flutter_paytabs_bridge_stream');
-    localStream.receiveBroadcastStream().listen(eventsCallBack);
-    return await localChannel.invokeMethod('startApplePayPayment', arg.map);
+    _listenToEvents(eventsCallback);
+    return await _channel.invokeMethod('startApplePayPayment', arg.map);
   }
 }
