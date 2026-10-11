@@ -1,3 +1,61 @@
+## 2.7.16
+
+* Add Swift Package Manager support
+* Present payment screens from the top view controller on iOS
+* Reuse a single event subscription across payment calls
+
+## 2.7.15
+
+* Update Android payment-sdk to 6.8.15 (fix keyboard covering input fields)
+
+## 2.7.14
+
+* Bug Fix
+
+## 2.7.13
+
+* Update iOS PayTabsSDK to 6.6.55
+
+## 2.7.12
+
+* Bug Fix
+
+## 2.7.11
+
+* Bug Fix
+
+## 2.7.10
+
+* Bug Fix
+
+## 2.7.9
+
+* Bug Fix
+
+## 2.7.8
+
+* Bug Fix
+
+## 2.7.7
+
+* Bug Fix
+
+## 2.7.6
+
+* Bug Fix
+
+## 2.7.5
+
+* Bug Fix
+
+## 2.7.4
+
+* Bug Fix
+
+## $NEW_VERSION
+
+* Bug Fix
+
 ## 2.0.3-beta
 
 * First releases
@@ -254,3 +312,18 @@
 
 * Update Android SDK.
 * Remove deprecated saved cards feature.
+
+## 2.7.1
+
+* Support new Android memory page size 16K.
+* Add new APMs: Tamara, Tru and Forsa
+* Update Android SDK.
+* Update iOS SDK.
+
+## 2.7.2
+
+* Bug Fix
+
+## 2.7.7
+
+* Bug Fix

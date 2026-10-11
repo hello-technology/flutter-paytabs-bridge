@@ -1,6 +1,6 @@
 name: flutter_paytabs_bridge
 description: Flutter plugin for Paytabs, used to handle payments using Card, Apms ... etc.
-version: 2.7.1
+version: 2.7.16
 homepage: "https://github.com/paytabscom/flutter-sdk-bridge"
 environment:
   sdk: ">=2.12.0 <4.0.0"
@@ -28,7 +28,7 @@ flutter:
         package: com.paymentsdk.flutter_paymentsdk_bridge
         pluginClass: FlutterPaytabsBridgePlugin
       ios:
-        pluginClass: FlutterPaymentSDKBridgePlugin
+        pluginClass: SwiftFlutterPaymentSDKBridgePlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

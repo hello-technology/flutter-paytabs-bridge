@@ -286,7 +286,9 @@ public class FlutterPaytabsBridgePlugin implements FlutterPlugin, MethodCallHand
         String merchantCountryCode = paymentDetails.optString("pt_merchant_country_code");
         String profileId = paymentDetails.optString("pt_profile_id");
         String transactionReference = paymentDetails.optString("pt_transaction_reference");
-        return new PaymentSDKQueryConfiguration(serverKey, clientKey, merchantCountryCode, profileId, transactionReference);
+        String paymentApiBaseUrl = paymentDetails.optString("pt_payment_api_base_url").trim();
+        String paymentApiBaseUrlOrNull = paymentApiBaseUrl.isEmpty() ? null : paymentApiBaseUrl;
+        return new PaymentSDKQueryConfiguration(serverKey, clientKey, merchantCountryCode, profileId, transactionReference, paymentApiBaseUrlOrNull);
     }
 
     @NotNull
@@ -340,7 +342,7 @@ public class FlutterPaytabsBridgePlugin implements FlutterPlugin, MethodCallHand
     private Map<String, Object> getMetadata() {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("PaymentSDKPluginName", "flutter");
-        metadata.put("PaymentSDKPluginVersion", "2.7.0");
+        metadata.put("PaymentSDKPluginVersion", "2.7.15");
         return metadata;
     }
 
